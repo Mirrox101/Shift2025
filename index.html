@@ -1,64 +1,32 @@
-<!-- Schichtplaner 2025 – v77 (Fix Login Handler, Sticky Headers & Table Scroll) -->
+<!-- Schichtplaner 2025 – Responsive v78 -->
 <!DOCTYPE html>
 <html lang="de" class="font-sans">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>Schichtplaner 2025</title>
+  <title>Schichtplaner 2025</title>
   <!-- Google Font Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
   <!-- TailwindCSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>tailwind.config = { darkMode:'class' };</script>
   <style>
     body { font-family:'Inter',sans-serif; }
     table td, table th { transition: filter .2s; }
     tbody tr:hover td { filter: brightness(1.1); }
     .sticky { position: sticky; left: 0; z-index: 10; background-color: inherit; }
-    .nowrap { white-space: nowrap; }
+
+    /* sanftes Touch-Scrolling */
+    .overflow-x-auto { -webkit-overflow-scrolling: touch; }
+
+    /* erlauben, dass lange Labels umbrechen auf kleinen Bildschirmen */
+    @media (max-width: 640px) {
+      .nowrap { white-space: normal; }
+    }
+
     .current-kw { background-color: rgba(253, 224, 71, 0.15); }
   </style>
-</head>
-<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen flex flex-col items-center p-4">
-
-  <!-- Login Form -->
-  <form id="loginForm" class="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 w-full max-w-xs mt-16">
-    <h1 class="text-2xl font-bold text-center mb-4">Admin-Login</h1>
-    <input id="password" type="password" placeholder="Passwort" required class="w-full p-2 border rounded mb-4">
-    <button type="submit" class="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Einloggen</button>
-  </form>
-
-  <!-- Main Content -->
-  <div id="main" class="hidden w-full max-w-6xl flex-1 flex flex-col gap-6 mt-8">
-    <header class="flex justify-between items-center">
-      <h1 class="text-3xl font-bold flex-1 text-center nowrap">Schichtplan 2025</h1>
-      <div class="flex gap-2">
-        <button id="toggleMech" title="Mechaniker" class="p-2 bg-gray-200 dark:bg-gray-700 rounded">🛠️</button>
-        <button id="toggleElec" title="Elektriker" class="p-2 bg-gray-200 dark:bg-gray-700 rounded">⚡</button>
-        <button id="themeBtn" title="Dark/Light" class="p-2 bg-gray-200 dark:bg-gray-700 rounded"><span id="themeIcon">🌙</span></button>
-        <button id="resetBtn" class="px-3 py-1 bg-red-600 text-white rounded">Reset</button>
-      </div>
-    </header>
-    <!-- Tables Container -->
-    <div id="tables" class="flex flex-col gap-8"></div>
-    <!-- Legend & Status -->
-    <footer id="legend" class="grid grid-cols-2 sm:grid-cols-5 gap-4 text-sm">
-      <div class="flex items-center gap-2"><span class="w-4 h-4 bg-indigo-200"></span> Nacht</div>
-      <div class="flex items-center gap-2"><span class="w-4 h-4 bg-orange-200"></span> Spät</div>
-      <div class="flex items-center gap-2"><span class="w-4 h-4 bg-blue-200"></span> WK</div>
-      <div class="flex items-center gap-2"><span class="w-4 h-4 bg-green-200"></span> Urlaub</div>
-      <div class="flex items-center gap-2"><span class="w-4 h-4 bg-rose-200"></span> Absenz</div>
-      <div class="flex items-center gap-2"><span class="w-4 h-4 bg-gray-400"></span> BR</div>
-      <div class="flex items-center gap-2"><span class="w-4 h-4 bg-yellow-200"></span> m07</div>
-      <div class="flex items-center gap-2"><span class="w-4 h-4 bg-teal-200"></span> m06</div>
-      <div class="flex items-center gap-2"><span class="w-4 h-4 bg-purple-200"></span> m01</div>
-      <div class="flex items-center gap-2"><span class="w-4 h-4 bg-red-200"></span> m10</div>
-    </footer>
-    <div class="text-center text-xs text-gray-500 mt-2">Stand: <span id="saveStatus">–</span></div>
-  </div>
-
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const PASSWORD = 'shift2025';
@@ -92,8 +60,7 @@
       }
 
       function getISOWeek(date) {
-        const tmp = new Date(Date.UTC(date.getFullYear(), date.
-getMonth(), date.getDate()));
+        const tmp = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
         const dayNum = (tmp.getUTCDay() + 6) % 7;
         tmp.setUTCDate(tmp.getUTCDate() - dayNum + 3);
         const firstThursday = tmp.valueOf();
@@ -101,15 +68,16 @@ getMonth(), date.getDate()));
         if (tmp.getUTCDay() !== 4) tmp.setUTCDate(1 + ((4 - tmp.getUTCDay()) + 7) % 7);
         return 1 + Math.ceil((firstThursday - tmp) / 604800000);
       }
+
       function getCurrentKWIndex(weeks) {
         const today = new Date();
         const curKW = getISOWeek(today);
         return weeks.findIndex(w => w.kw === curKW);
       }
 
-      const colorMech = v => v==='BR'?'bg-gray-400':{Spät:'bg-orange-200',Normal:'',WK:'bg-blue-200',Urlaub:'bg-green-200',Absenz:'bg-rose-200'}[v]||'';
-      const colorElec = v => v==='BR'?'bg-gray-400':{Spät:'bg-orange-200',Nacht:'bg-indigo-200',Normal:'',WK:'bg-blue-200',Urlaub:'bg-green-200',Absenz:'bg-rose-200'}[v]||'';
-      const colorRev = v => v==='m07'?'bg-yellow-200':v==='m06'?'bg-teal-200':v==='m01'?'bg-purple-200':v==='m10'?'bg-red-200':'';
+      const colorMech = v => v==='BR' ? 'bg-gray-400' : {Spät:'bg-orange-200', Normal:'', WK:'bg-blue-200', Urlaub:'bg-green-200', Absenz:'bg-rose-200'}[v] || '';
+      const colorElec = v => v==='BR' ? 'bg-gray-400' : {Nacht:'bg-indigo-200', Spät:'bg-orange-200', Normal:'', WK:'bg-blue-200', Urlaub:'bg-green-200', Absenz:'bg-rose-200'}[v] || '';
+      const colorRev = v => v==='m07' ? 'bg-yellow-200' : v==='m06' ? 'bg-teal-200' : v==='m01' ? 'bg-purple-200' : v==='m10' ? 'bg-red-200' : '';
 
       function save() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({ mechPlan, elecPlan, revPlan, showMech, showElec }));
@@ -123,8 +91,7 @@ getMonth(), date.getDate()));
           ({ mechPlan, elecPlan, revPlan, showMech, showElec } = data);
         } else {
           mechPlan = Array.from({ length: W }, (_, i) => mechanics.map((_, j) => j === i % mechanics.length ? 'Spät' : 'Normal'));
-                    elecPlan = Array.from({ length: W }, (_, i) => electricians.map((_, j) => j === i % electricians.length ? 'Nacht' : j === (i+1) % electricians.length ? 'Spät' : 'Normal'));
-          revPlan = Array(W).fill('');
+          elecPlan = Array.from({ length: W }, (_, i) => electricians.map((_, j) => j === i % electricians.length ? 'Nacht' : j === (i+1) % electricians.length ? 'Spät' : 'Normal'));
           revPlan = Array(W).fill('');
           save();
         }
@@ -133,78 +100,134 @@ getMonth(), date.getDate()));
       function renderTable(title, headers, data, cycle, colorFn) {
         const weeks = getWeeks();
         const curIndex = getCurrentKWIndex(weeks);
-        const card = document.createElement('div');
-        card.className='rounded-xl shadow p-4 bg-white dark:bg-gray-800';
-        // title sticky if table scrolls
+        const card = document.createElement('div'); card.className = 'rounded-xl shadow p-4 bg-white dark:bg-gray-800';
         card.innerHTML = `<h2 class='text-lg font-semibold mb-2 nowrap sticky'>${title}</h2>`;
-        // wrap table in horizontal scroll
-        const scrollWrap = document.createElement('div'); scrollWrap.className='overflow-x-auto';
-        const tbl = document.createElement('table'); tbl.className='min-w-full';
+        const scrollWrap = document.createElement('div'); scrollWrap.className = 'overflow-x-auto w-full';
+        const tbl = document.createElement('table'); tbl.className = 'min-w-full';
         const thead = document.createElement('thead');
         const row1 = document.createElement('tr');
-        row1.innerHTML = '<th></th>' + weeks.map((w,i) => `<th class="border px-2 py-1 sticky top-0 bg-gray-200 dark:bg-gray-700 ${i===curIndex?'current-kw':''}">KW ${w.kw}</th>`).join('');
+        row1.innerHTML = '<th></th>' + weeks.map((w,i) => `<th class="border px-1 py-0.5 text-xs sm:px-2 sm:py-1 sm:text-sm sticky top-0 bg-gray-200 dark:bg-gray-700 ${i===curIndex?'current-kw':''}">KW ${w.kw}</th>`).join('');
         const row2 = document.createElement('tr');
-        row2.innerHTML = '<th></th>' + weeks.map((w,i) => `<th class="border px-2 py-1 sticky top-0 bg-gray-200 dark:bg-gray-700 ${i===curIndex?'current-kw':''}">${w.mon}</th>`).join('');
-        thead.append(row1,row2); tbl.append(thead);
+        row2.innerHTML = '<th></th>' + weeks.map((w,i) => `<th class="border px-1 py-0.5 text-xs sm:px-2 sm:py-1 sm:text-sm sticky top-0 bg-gray-200 dark:bg-gray-700 ${i===curIndex?'current-kw':''}">${w.mon}</th>`).join('');
+        thead.append(row1, row2); tbl.append(thead);
         const tbody = document.createElement('tbody');
-        headers.forEach((h,ri) => {
-          const tr = document.createElement('tr'); tr.className='hover:bg-gray-100 dark:hover:bg-gray-700';
-          const td0 = document.createElement('td'); td0.className='border px-2 py-1 font-medium sticky left-0 bg-white dark:bg-gray-800'; td0.textContent=h;
+        headers.forEach((h, ri) => {
+          const tr = document.createElement('tr'); tr.className = 'hover:bg-gray-100 dark:hover:bg-gray-700';
+          const td0 = document.createElement('td'); td0.className = 'border px-1 py-0.5 text-xs sm:px-2 sm:py-1 sm:text-sm font-medium sticky left-0 bg-white dark:bg-gray-800'; td0.textContent = h;
           tr.append(td0);
-          weeks.forEach((_,ci) => {
-            const td=document.createElement('td'); const cur=data[ci][ri]; td.textContent=cur;
-            td.className=`border px-2 py-1 whitespace-nowrap ${colorFn(cur)}${ci===curIndex?' current-kw':''}`;
-            td.addEventListener('click',()=>{ const idx=cycle.indexOf(data[ci][ri]); const next=cycle[(idx+1)%cycle.length]; data[ci][ri]=next; td.textContent=next; td.className=`border px-2 py-1 whitespace-nowrap ${colorFn(next)}${ci===curIndex?' current-kw':''}`; save(); });
+          weeks.forEach((_, ci) => {
+            const td = document.createElement('td'); const cur = data[ci][ri]; td.textContent = cur;
+            td.className = `border px-1 py-0.5 text-xs sm:px-2 sm:py-1 sm:text-sm whitespace-nowrap ${colorFn(cur)}${ci===curIndex?' current-kw':''}`;
+            td.addEventListener('click', () => {
+              const idx = cycle.indexOf(data[ci][ri]); const next = cycle[(idx+1) % cycle.length];
+              data[ci][ri] = next; td.textContent = next;
+              td.className = `border px-1 py-0.5 text-xs sm:px-2 sm:py-1 sm:text-sm whitespace-nowrap ${colorFn(next)}${ci===curIndex?' current-kw':''}`;
+              save();
+            });
             tr.append(td);
-          }); tbody.append(tr);
-        }); tbl.append(tbody);
-        scrollWrap.append(tbl); card.append(scrollWrap);
+          });
+          tbody.append(tr);
+        });
+        tbl.append(tbody);
+        scrollWrap.append(tbl);
+        card.append(scrollWrap);
         return card;
       }
 
       function renderRevisionTable() {
         const weeks = getWeeks(); const curIndex = getCurrentKWIndex(weeks);
-        const card = document.createElement('div'); card.className='rounded-xl shadow p-4 bg-white dark:bg-gray-800';
-        card.innerHTML=`<h2 class='text-lg font-semibold mb-2 nowrap sticky'>🔧 Revisionen</h2>`;
-        const scrollWrap=document.createElement('div'); scrollWrap.className='overflow-x-auto';
-        const tbl=document.createElement('table'); tbl.className='min-w-full';
-        const thead=document.createElement('thead');
-        const h1=document.createElement('tr'); h1.innerHTML='<th></th>'+weeks.map((w,i)=>`<th class="border px-2 py-1 sticky top-0 bg-gray-200 dark:bg-gray-700 ${i===curIndex?'current-kw':''}">KW ${w.kw}</th>`).join('');
-        const h2=document.createElement('tr'); h2.innerHTML='<th></th>'+weeks.map((w,i)=>`<th class="border px-2 py-1 sticky top-0 bg-gray-200 dark:bg-gray-700 ${i===curIndex?'current-kw':''}">${w.mon}</th>`).join('');
-        thead.append(h1,h2); tbl.append(thead);
-        const tbody=document.createElement('tbody'); const row=document.createElement('tr'); row.className='hover:bg-gray-100 dark:hover:bg-gray-700';
-        const cell0=document.createElement('td'); cell0.className='border px-2 py-1 font-medium sticky left-0 bg-white dark:bg-gray-800'; cell0.textContent='Maschine'; row.append(cell0);
-        weeks.forEach((_,i)=>{ const c=document.createElement('td'); c.className=`border px-2 py-1 whitespace-nowrap ${colorRev(revPlan[i])}`; c.textContent=revPlan[i]; c.addEventListener('click',()=>{ const idx=machines.indexOf(revPlan[i]); const next=machines[(idx+1)%machines.length]; revPlan[i]=next; c.textContent=next; c.className=`border px-2 py-1 whitespace-nowrap ${colorRev(next)}`; save(); }); row.append(c);} );
-        tbody.append(row); tbl.append(tbody); scrollWrap.append(tbl); card.append(scrollWrap);
+        const card = document.createElement('div'); card.className = 'rounded-xl shadow p-4 bg-white dark:bg-gray-800';
+        card.innerHTML = `<h2 class='text-lg font-semibold mb-2 nowrap sticky'>🔧 Revisionen</h2>`;
+        const scrollWrap = document.createElement('div'); scrollWrap.className = 'overflow-x-auto w-full';
+        const tbl = document.createElement('table'); tbl.className = 'min-w-full';
+        const thead = document.createElement('thead');
+        const h1 = document.createElement('tr');
+        h1.innerHTML = '<th></th>' + weeks.map((w,i) => `<th class="border px-1 py-0.5 text-xs sm:px-2 sm:py-1 sm:text-sm sticky top-0 bg-gray-200 dark:bg-gray-700 ${i===curIndex?'current-kw':''}">KW ${w.kw}</th>`).join('');
+        const h2 = document.createElement('tr');
+        h2.innerHTML = '<th></th>' + weeks.map((w,i) => `<th class="border px-1 py-0.5 text-xs sm:px-2 sm:py-1 sm:text-sm sticky top-0 bg-gray-200 dark:bg-gray-700 ${i===curIndex?'current-kw':''}">${w.mon}</th>`).join('');
+        thead.append(h1, h2); tbl.append(thead);
+        const tbody = document.createElement('tbody'); const row = document.createElement('tr'); row.className = 'hover:bg-gray-100 dark:hover:bg-gray-700';
+        const cell0 = document.createElement('td'); cell0.className = 'border px-1 py-0.5 text-xs sm:px-2 sm:py-1 sm:text-sm font-medium sticky left-0 bg-white dark:bg-gray-800'; cell0.textContent = 'Maschine'; row.append(cell0);
+        weeks.forEach((_, i) => {
+          const c = document.createElement('td');
+          c.className = `border px-1 py-0.5 text-xs sm:px-2 sm:py-1 sm:text-sm whitespace-nowrap ${colorRev(revPlan[i])}`;
+          c.textContent = revPlan[i];
+          c.addEventListener('click', () => {
+            const idx = machines.indexOf(revPlan[i]); const next = machines[(idx+1) % machines.length];
+            revPlan[i] = next; c.textContent = next;
+            c.className = `border px-1 py-0.5 text-xs sm:px-2 sm:py-1 sm:text-sm whitespace-nowrap ${colorRev(next)}`;
+            save();
+          });
+          row.append(c);
+        });
+        tbody.append(row); tbl.append(tbody);
+        scrollWrap.append(tbl); card.append(scrollWrap);
         return card;
       }
 
       function renderAll() {
-        tablesDiv.innerHTML='';
-        if(showMech) tablesDiv.append(renderTable('🛠️ Mechaniker', mechanics, mechPlan, mechCycle, colorMech));
-        if(showElec) tablesDiv.append(renderTable('⚡ Elektriker', electricians, elecPlan, elecCycle, colorElec));
+        tablesDiv.innerHTML = '';
+        if (showMech) tablesDiv.append(renderTable('🛠️ Mechaniker', mechanics, mechPlan, mechCycle, colorMech));
+        if (showElec) tablesDiv.append(renderTable('⚡ Elektriker', electricians, elecPlan, elecCycle, colorElec));
         tablesDiv.append(renderRevisionTable());
-        // Scroll to current KW
         setTimeout(() => {
-          const cur = tablesDiv.querySelector('.current-kw');
-          if (cur && typeof cur.scrollIntoView === 'function') {
-            cur.scrollIntoView({ behavior: 'auto', inline: 'center' });
-          }
+          tablesDiv.querySelectorAll('.overflow-x-auto').forEach(wrap => {
+            const cur = wrap.querySelector('.current-kw');
+            if (cur) cur.scrollIntoView({ behavior: 'auto', inline: 'center' });
+          });
         }, 0);
       }
 
       loginForm.addEventListener('submit', e => {
         e.preventDefault();
-        if(passwordInput.value===PASSWORD) {
+        if (passwordInput.value === PASSWORD) {
           loginForm.remove(); mainDiv.classList.remove('hidden'); load(); renderAll();
         } else alert('Falsches Passwort');
       });
-      document.getElementById('toggleMech').onclick=() =>{showMech=!showMech; renderAll(); save();};
-      document.getElementById('toggleElec').onclick=() =>{showElec=!showElec; renderAll(); save();};
-      document.getElementById('resetBtn').onclick=() =>{ if(confirm('Plan zurücksetzen?')){ localStorage.removeItem(STORAGE_KEY); location.reload(); }};
-      document.getElementById('themeBtn').onclick=() =>{ const html=document.documentElement; const d=html.classList.toggle('dark'); localStorage.theme=d?'dark':'light'; document.getElementById('themeIcon').textContent=d?'☀️':'🌙'; };
-      if(localStorage.theme==='dark') document.documentElement.classList.add('dark');
+
+      document.getElementById('toggleMech').onclick = () => { showMech = !showMech; renderAll(); save(); };
+      document.getElementById('toggleElec').onclick = () => { showElec = !showElec; renderAll(); save(); };
+      document.getElementById('resetBtn').onclick = () => { if (confirm('Plan zurücksetzen?')) { localStorage.removeItem(STORAGE_KEY); location.reload(); } };
+      document.getElementById('themeBtn').onclick = () => { const html = document.documentElement; const d = html.classList.toggle('dark'); localStorage.theme = d ? 'dark' : 'light'; document.getElementById('themeIcon').textContent = d ? '☀️' : '🌙'; };
+      if (localStorage.theme === 'dark') document.documentElement.classList.add('dark');
     });
   </script>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen flex flex-col items-center p-4">
+
+  <!-- Login Form -->
+  <form id="loginForm" class="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 w-full max-w-xs mt-16">
+    <h1 class="text-2xl font-bold text-center mb-4">Admin-Login</h1>
+    <input id="password" type="password" placeholder="Passwort" required class="w-full p-2 border rounded mb-4">
+    <button type="submit" class="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Einloggen</button>
+  </form>
+
+  <!-- Main Content -->
+  <div id="main" class="hidden w-full max-w-6xl flex-1 flex flex-col gap-6 mt-8">
+    <header class="flex flex-col sm:flex-row justify-between items-center gap-2 w-full">
+      <h1 class="text-3xl font-bold text-center nowrap flex-1">Schichtplan 2025</h1>
+      <div class="flex flex-wrap gap-2 justify-center sm:justify-end">
+        <button id="toggleMech" title="Mechaniker" class="p-2 bg-gray-200 dark:bg-gray-700 rounded">🛠️</button>
+        <button id="toggleElec" title="Elektriker" class="p-2 bg-gray-200 dark:bg-gray-700 rounded">⚡</button>
+        <button id="themeBtn" title="Dark/Light" class="p-2 bg-gray-200 dark:bg-gray-700 rounded"><span id="themeIcon">🌙</span></button>
+        <button id="resetBtn" class="px-3 py-1 bg-red-600 text-white rounded">Reset</button>
+      </div>
+    </header>
+    <div id="tables" class="flex flex-col gap-8 w-full"></div>
+    <footer id="legend" class="grid grid-cols-2 sm:grid-cols-5 gap-4 text-sm w-full">
+      <div class="flex items-center gap-2"><span class="w-4 h-4 bg-indigo-200"></span> Nacht</div>
+      <div class="flex items-center gap-2"><span class="w-4 h-4 bg-orange-200"></span> Spät</div>
+      <div class="flex items-center gap-2"><span class="w-4 h-4 bg-blue-200"></span> WK</div>
+      <div class="flex items-center gap-2"><span class="w-4 h-4 bg-green-200"></span> Urlaub</div>
+      <div class="flex items-center gap-2"><span class="w-4 h-4 bg-rose-200"></span> Absenz</div>
+      <div class="flex items-center gap-2"><span class="w-4 h-4 bg-gray-400"></span> BR</div>
+      <div class="flex items-center gap-2"><span class="w-4 h-4 bg-yellow-200"></span> m07</div>
+      <div class="flex items-center gap-2"><span class="w-4 h-4 bg-teal-200"></span> m06</div>
+      <div class="flex items-center gap-2"><span class="w-4 h-4 bg-purple-200"></span> m01</div>
+      <div class="flex items-center gap-2"><span class="w-4 h-4 bg-red-200"></span> m10</div>
+    </footer>
+    <div class="text-center text-xs text-gray-500 mt-2">Stand: <span id="saveStatus">–</span></div>
+  </div>
 </body>
 </html>
+
